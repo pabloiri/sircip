@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: sircip
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/sircip_db
+    username: postgres
+    password: secret
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://accounts.google.com
+          audiences:
+            - "123456789012-xxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com"  # ID completo de Postman
+            - "987654321098-yyyyyyyyyyyyyyyyyyyyyyyy.apps.googleusercontent.com"  # ID completo de tu Web
+            - "456123789012-zzzzzzzzzzzzzzzzzzzzzzzz.apps.googleusercontent.com"  # ID completo de tu App Móvil

@@ -1,7 +1,5 @@
 package com.cabreras.sircip;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-
 import java.math.BigDecimal;
 
 public record PadronResponse(

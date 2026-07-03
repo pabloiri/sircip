@@ -24,13 +24,10 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String requestKey = request.getHeader("X-API-KEY");
-        if (requestKey == null) {
-            requestKey = request.getHeader("x-api-key");
-        }
         if (validApiKey == null || validApiKey.trim().isEmpty()) {
             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
             response.getWriter().write("Error de configuracion: La API Key del servidor no esta definida.");
-            return; // Detiene por completo la ejecución de la petición
+            return;
         }
         if (validApiKey.equals(requestKey)) {
             var roleApiUser = List.of(new SimpleGrantedAuthority("ROLE_API_USER"));

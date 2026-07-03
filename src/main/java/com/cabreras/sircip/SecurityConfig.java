@@ -14,7 +14,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Value("${APP_API_KEY:${app.api-key}}")
+    @Value("${app.api-key}")
     private String validApiKey;
 
     @Bean

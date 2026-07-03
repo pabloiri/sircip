@@ -20,8 +20,8 @@ import java.util.List;
 @Validated
 public class PadronController {
 
-    public static final BigDecimal ALICUOTA_FUERA_PADRON = BigDecimal.valueOf(2);
-    public static final BigDecimal ALICUOTA_SOBRETASA = BigDecimal.valueOf(1);
+    public static final BigDecimal ALICUOTA_FUERA_PADRON = BigDecimal.valueOf(2.0);
+    public static final BigDecimal ALICUOTA_SOBRETASA = BigDecimal.valueOf(1.0);
     public static final BigDecimal CIEN = BigDecimal.valueOf(100);
 
     private final PadronRepository padronRepository;
@@ -39,7 +39,7 @@ public class PadronController {
         PadronId idCompuesto = new PadronId(periodoParam, cuit);
         return padronRepository.findById(idCompuesto)
                 .map(padron -> respuestaEnPadron(jurisdiccion, baseImponible, padron))
-                .orElse(respuestaFueraPadron(jurisdiccion, baseImponible));
+                .orElseGet(() -> respuestaFueraPadron(jurisdiccion, baseImponible));
     }
 
     private ResponseEntity<List<PadronResponse>> respuestaEnPadron(Short jurisdiccion, BigDecimal baseImponible, Padron padron) {

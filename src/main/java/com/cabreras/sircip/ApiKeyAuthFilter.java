@@ -12,7 +12,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.List;
 
 @AllArgsConstructor
 public class ApiKeyAuthFilter extends OncePerRequestFilter {
@@ -26,9 +26,8 @@ public class ApiKeyAuthFilter extends OncePerRequestFilter {
         String requestKey = request.getHeader("X-API-KEY");
 
         if (validApiKey.equals(requestKey)) {
-            var authentication = new UsernamePasswordAuthenticationToken(
-                    "API_Client", null, Collections.singletonList(new SimpleGrantedAuthority("ROLE_API_USER"))
-            );
+            var roleApiUser = List.of(new SimpleGrantedAuthority("ROLE_API_USER"));
+            var authentication = new UsernamePasswordAuthenticationToken("API_Client", null, roleApiUser);
             SecurityContextHolder.getContext().setAuthentication(authentication);
             filterChain.doFilter(request, response);
         } else {

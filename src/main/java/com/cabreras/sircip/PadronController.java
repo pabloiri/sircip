@@ -1,4 +1,5 @@
 package com.cabreras.sircip;
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;

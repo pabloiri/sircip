@@ -2,26 +2,32 @@ package com.cabreras.sircip;
 
 import org.springframework.stereotype.Component;
 import jakarta.annotation.PostConstruct;
+
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static java.math.RoundingMode.*;
 
 @Component
 public class AlicuotaCache {
 
-    private final Map<String, Double> mapa = new ConcurrentHashMap<>();
+    public static final BigDecimal ZERO = BigDecimal.valueOf(0.00).setScale(2, HALF_UP);
+
+    private final Map<String, BigDecimal> mapa = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void init() {
-        mapa.put("A", 3.50);
-        mapa.put("B", 2.50);
-        mapa.put("E", 1.00);
-        mapa.put("F", 0.00);
-        mapa.put("G", 4.20);
-        mapa.put("H", 5.00);
+        mapa.put("A", BigDecimal.valueOf(3.50).setScale(2, HALF_UP));
+        mapa.put("B", BigDecimal.valueOf(2.50).setScale(2, HALF_UP));
+        mapa.put("E", BigDecimal.valueOf(1.00).setScale(2, HALF_UP));
+        mapa.put("F", BigDecimal.valueOf(0.00).setScale(2, HALF_UP));
+        mapa.put("G", BigDecimal.valueOf(4.20).setScale(2, HALF_UP));
+        mapa.put("H", BigDecimal.valueOf(5.00).setScale(2, HALF_UP));
     }
 
-    public Double obtenerPorcentaje(String letra) {
-        if (letra == null) return 0.0;
-        return mapa.getOrDefault(letra.toUpperCase(), 0.0);
+    public BigDecimal obtenerPorcentaje(String letra) {
+        if (letra == null) return ZERO;
+        return mapa.getOrDefault(letra.toUpperCase(), ZERO);
     }
 }

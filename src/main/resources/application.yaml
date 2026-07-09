@@ -12,7 +12,7 @@ spring:
     hibernate:
       ddl-auto: validate
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-    show-sql: true
+    show-sql: false
 
   web:
     error:
@@ -20,15 +20,10 @@ spring:
       include-binding-errors: always    # (Reemplaza a server.error.include-binding-errors)
       include-exception: false          # (Reemplaza a server.error.include-exception)
       include-stacktrace: never         # (Reemplaza a server.error.include-stacktrace)
-#app:
-#  api-key: "MiClaveSecreta123"
 
 logging:
   level:
-    org:
-      zalando:
-        logbook: TRACE
-
-logbook:
-  format:
-    style: json
+    root: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.orm.jdbc.bind: WARN
+    org.zalando.logbook: TRACE

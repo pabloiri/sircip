@@ -19,7 +19,7 @@ import java.util.List;
 import static java.math.RoundingMode.HALF_UP;
 
 @RestController
-@RequestMapping("/taxengine/v1/")
+@RequestMapping(path ="/taxengine/v1")
 @AllArgsConstructor
 @Validated
 public class PadronController {

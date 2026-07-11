@@ -27,3 +27,11 @@ logging:
     org.hibernate.SQL: WARN
     org.hibernate.orm.jdbc.bind: WARN
     org.zalando.logbook: TRACE
+
+logbook:
+  format:
+    style: json
+  obfuscate:
+    headers:
+      - Authorization
+      - X-Api-Key

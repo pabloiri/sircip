@@ -46,6 +46,10 @@ public class PadronController {
                 .orElseGet(() -> respuestaFueraPadron(jurisdiccion, baseImponible));
     }
 
+    @GetMapping(path = "/prueba")
+    public String prueba() {
+        return "Hola, nueva versión desplegada y ejecutandose " + java.time.LocalDateTime.now();    }
+
     private ResponseEntity<List<PadronResponse>> respuestaEnPadron(Short jurisdiccion, BigDecimal baseImponible, Padron padron) {
         List<PadronResponse> respuesta = new ArrayList<>();
         var alicuota = alicuotaCache.obtenerPorcentaje(padron.getLetraAlicuota());

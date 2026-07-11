@@ -19,7 +19,7 @@ import java.util.List;
 import static java.math.RoundingMode.HALF_UP;
 
 @RestController
-@RequestMapping(path ="/taxengine/v1")
+@RequestMapping
 @AllArgsConstructor
 @Validated
 public class PadronController {
@@ -32,7 +32,7 @@ public class PadronController {
     private final AlicuotaCache alicuotaCache;
     private final JurisdiccionesCache jurisdiccionesCache;
 
-    @GetMapping(path = "/percepciones")
+    @GetMapping(path = "/taxengine/v1/percepciones")
     public ResponseEntity<List<PadronResponse>> consultarPadron(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
             @RequestParam String cuit,

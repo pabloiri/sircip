@@ -19,7 +19,7 @@ import java.util.List;
 import static java.math.RoundingMode.HALF_UP;
 
 @RestController
-@RequestMapping("/taxengine/v1/")
+@RequestMapping(path = "/taxengine/v1/")
 @AllArgsConstructor
 @Validated
 public class PadronController {
@@ -45,6 +45,10 @@ public class PadronController {
                 .map(padron -> respuestaEnPadron(jurisdiccion, baseImponible, padron))
                 .orElseGet(() -> respuestaFueraPadron(jurisdiccion, baseImponible));
     }
+
+    @GetMapping(path = "/prueba")
+    public String prueba() {
+        return "Hola, nueva versión desplegada y ejecutandose " + java.time.LocalDateTime.now();    }
 
     private ResponseEntity<List<PadronResponse>> respuestaEnPadron(Short jurisdiccion, BigDecimal baseImponible, Padron padron) {
         List<PadronResponse> respuesta = new ArrayList<>();

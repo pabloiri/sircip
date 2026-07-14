@@ -3,30 +3,32 @@ package com.cabreras.sircip;
 import org.springframework.stereotype.Component;
 import jakarta.annotation.PostConstruct;
 
-import java.math.BigDecimal;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static java.math.RoundingMode.*;
 
 @Component
 public class AlicuotaCache {
 
-    public static final BigDecimal ZERO = BigDecimal.valueOf(0.00).setScale(2, HALF_UP);
+    // Escala 2: todos los valores se almacenan multiplicados por 100
+    public static final long ZERO = 0L;
 
-    private final Map<String, BigDecimal> mapa = new ConcurrentHashMap<>();
+    private final Map<String, Long> mapa = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void init() {
-        mapa.put("A", BigDecimal.valueOf(3.50).setScale(2, HALF_UP));
-        mapa.put("B", BigDecimal.valueOf(2.50).setScale(2, HALF_UP));
-        mapa.put("E", BigDecimal.valueOf(1.00).setScale(2, HALF_UP));
-        mapa.put("F", BigDecimal.valueOf(0.00).setScale(2, HALF_UP));
-        mapa.put("G", BigDecimal.valueOf(4.20).setScale(2, HALF_UP));
-        mapa.put("H", BigDecimal.valueOf(5.00).setScale(2, HALF_UP));
+        // Los valores se almacenan en escala 2 (multiplicados por 100)
+        mapa.put("A", 350L);
+        mapa.put("B", 250L);
+        mapa.put("E", 100L);
+        mapa.put("F", 0L);
+        mapa.put("G", 420L);
+        mapa.put("H", 500L);
     }
 
-    public BigDecimal obtenerPorcentaje(String letra) {
+    /**
+     * Devuelve el porcentaje en escala 2 (multiplicado por 100)
+     */
+    public long obtenerPorcentaje(String letra) {
         if (letra == null) return ZERO;
         return mapa.getOrDefault(letra.toUpperCase(), ZERO);
     }

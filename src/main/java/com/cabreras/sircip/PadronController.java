@@ -24,9 +24,12 @@ import static java.math.RoundingMode.HALF_UP;
 @Validated
 public class PadronController {
 
-    public static final BigDecimal ALICUOTA_FUERA_PADRON = BigDecimal.valueOf(2).setScale(2, HALF_UP);
-    public static final BigDecimal ALICUOTA_SOBRETASA = BigDecimal.valueOf(1).setScale(2, HALF_UP);
-    public static final BigDecimal CIEN = BigDecimal.valueOf(100);
+    private static final int SCALE = 2;
+    private static final int SCALE_MULTIPLIER = 100;
+    private static final long ALICUOTA_FUERA_PADRON = 200L;    // 2.00%
+    private static final long ALICUOTA_SOBRETASA = 100L;       // 1.00%
+    private static final long CIEN_PORCIENTO = 10000L;         // 100.00% (en escala 2)
+    private static final BigDecimal SCALE_MULTIPLIER_BD = BigDecimal.valueOf(SCALE_MULTIPLIER);
 
     private final PadronRepository padronRepository;
     private final AlicuotaCache alicuotaCache;
@@ -46,17 +49,14 @@ public class PadronController {
                 .orElseGet(() -> respuestaFueraPadron(jurisdiccion, baseImponible));
     }
 
-    @GetMapping(path = "/prueba")
-    public String prueba() {
-        return "Hola, nueva versión desplegada y ejecutandose " + java.time.LocalDateTime.now();    }
-
     private ResponseEntity<List<PadronResponse>> respuestaEnPadron(Short jurisdiccion, BigDecimal baseImponible, Padron padron) {
         List<PadronResponse> respuesta = new ArrayList<>();
         var alicuota = alicuotaCache.obtenerPorcentaje(padron.getLetraAlicuota());
-        var respuestaSIRC = calcularRespuesta("SIRC", baseImponible, alicuota);
+        var baseLong = bigDecimalToLong(baseImponible);
+        var respuestaSIRC = calcularRespuesta("SIRC", baseLong, alicuota);
         respuesta.add(respuestaSIRC);
         if (haySobretasa(padron.getCampo7() + "", jurisdiccion)) {
-            var respuestaSIRX = calcularRespuesta("SIRX", baseImponible, ALICUOTA_SOBRETASA);
+            var respuestaSIRX = calcularRespuesta("SIRX", baseLong, ALICUOTA_SOBRETASA);
             respuesta.add(respuestaSIRX);
         }
         return ResponseEntity.ok(respuesta);
@@ -65,25 +65,34 @@ public class PadronController {
     private ResponseEntity<List<PadronResponse>> respuestaFueraPadron(Short jurisdiccion, BigDecimal baseImponible) {
         if (!jurisdiccionesCache.adheridaSircip(jurisdiccion))
             return ResponseEntity.notFound().build();
-        var respuestaSIRY = calcularRespuesta("SIRY", baseImponible, ALICUOTA_FUERA_PADRON);
+        var baseLong = bigDecimalToLong(baseImponible);
+        var respuestaSIRY = calcularRespuesta("SIRY", baseLong, ALICUOTA_FUERA_PADRON);
         return ResponseEntity.ok(List.of(respuestaSIRY));
     }
 
     private boolean haySobretasa(String campo7, Short jurisdiccion) {
         int indice = 924 - jurisdiccion;
-        if (campo7 != null && indice >= 0 && indice < campo7.length()) {
-            return campo7.charAt(indice) == '2';
-        }
-        return false;
+        return campo7 != null && indice >= 0 && indice < campo7.length() && campo7.charAt(indice) == '2';
     }
 
-    private PadronResponse calcularRespuesta(String codigoImpuesto, BigDecimal baseImponible, BigDecimal alicuota) {
-        if (baseImponible == null || baseImponible.equals(BigDecimal.ZERO))
-            return new PadronResponse(codigoImpuesto, alicuota, null, null);
-        BigDecimal impuesto = baseImponible
-                .multiply(alicuota)
-                .divide(CIEN, 2, HALF_UP);
-        return new PadronResponse(codigoImpuesto, alicuota, baseImponible, impuesto);
+    private PadronResponse calcularRespuesta(String codigoImpuesto, Long baseImponible, Long alicuota) {
+        if (baseImponible == null || baseImponible == 0L)
+            return new PadronResponse(codigoImpuesto, longToBigDecimal(alicuota), null, null);
+        else
+            return new PadronResponse(codigoImpuesto,
+                    longToBigDecimal(alicuota),
+                    longToBigDecimal(baseImponible),
+                    longToBigDecimal((baseImponible * alicuota) / CIEN_PORCIENTO));
+    }
+
+    // Convierte BigDecimal a Long con escala 2 (multiplica por 100)
+    private Long bigDecimalToLong(BigDecimal valor) {
+        return valor == null ? null : valor.setScale(SCALE, HALF_UP).multiply(SCALE_MULTIPLIER_BD).longValue();
+    }
+
+    // Convierte Long (escala 2) a BigDecimal con 2 decimales
+    private BigDecimal longToBigDecimal(Long valor) {
+        return valor == null ? null : BigDecimal.valueOf(valor, SCALE);
     }
 
 }

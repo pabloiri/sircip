@@ -30,7 +30,10 @@ logging:
 
 logbook:
   format:
-    style: json
+    style: splunk
+  formatter:
+    style: http
+  strategy: default
   obfuscate:
     headers:
       - Authorization

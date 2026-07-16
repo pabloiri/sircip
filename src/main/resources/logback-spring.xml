@@ -1,29 +1,55 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
-
     <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <!-- Añade el nombre de la app -->
-            <customFields>{"app_name":"sircip"}</customFields>
-            <!-- Asegura que los campos del JSON de Logbook se fusionen -->
-            <findAndRegisterJacksonModules>true</findAndRegisterJacksonModules>
-            <includeMdc>true</includeMdc>
-            <!-- Definición de nombres de campos -->
-            <fieldNames>
-                <timestamp>timestamp</timestamp>
-                <level>level</level>
-                <logger>logger_name</logger>
-                <thread>thread_name</thread>
-                <!-- message es el mensaje estándar de Logback, lo mantenemos pero no lo usamos como contenedor único -->
-                <message>message</message>
-            </fieldNames>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <!-- Timestamp -->
+                <timestamp>
+                    <fieldName>@timestamp</fieldName>
+                </timestamp>
+
+                <!-- Versión -->
+                <version>
+                    <fieldName>@version</fieldName>
+                </version>
+
+                <!-- Nivel de log -->
+                <logLevel>
+                    <fieldName>log.level</fieldName>
+                </logLevel>
+
+                <!-- Logger name -->
+                <loggerName>
+                    <fieldName>logger.name</fieldName>
+                </loggerName>
+
+                <!-- Thread name -->
+                <threadName>
+                    <fieldName>thread.name</fieldName>
+                </threadName>
+
+                <!-- Mensaje -->
+                <message/>
+
+                <!-- 👇 Aquí está la clave: MDC como objeto anidado -->
+                <mdc>
+                    <fieldName>http</fieldName>
+                    <!-- Esto asegura que los campos del MDC se aniden correctamente -->
+                </mdc>
+
+                <!-- Stack trace (opcional) -->
+                <stackTrace>
+                    <fieldName>stack_trace</fieldName>
+                </stackTrace>
+            </providers>
         </encoder>
     </appender>
-    <!-- Nivel TRACE para ver el detalle de Logbook -->
-    <logger name="org.zalando.logbook" level="TRACE" />
 
     <root level="INFO">
-        <appender-ref ref="JSON_CONSOLE" />
+        <appender-ref ref="JSON_CONSOLE"/>
     </root>
+
+    <logger name="org.zalando.logbook" level="TRACE" additivity="false">
+        <appender-ref ref="JSON_CONSOLE"/>
+    </logger>
 </configuration>

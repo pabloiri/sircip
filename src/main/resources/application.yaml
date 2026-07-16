@@ -21,6 +21,10 @@ spring:
       include-exception: false          # (Reemplaza a server.error.include-exception)
       include-stacktrace: never         # (Reemplaza a server.error.include-stacktrace)
 
+  autoconfigure:
+    exclude:
+      - org.zalando.logbook.autoconfigure.LogbookAutoConfiguration
+
 logging:
   level:
     root: INFO
@@ -29,8 +33,6 @@ logging:
     org.zalando.logbook: TRACE
 
 logbook:
-  format:
-    style: json
   obfuscate:
     headers:
       - Authorization

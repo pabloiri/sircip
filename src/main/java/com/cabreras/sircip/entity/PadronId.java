@@ -1,11 +1,13 @@
-package com.cabreras.sircip;
+package com.cabreras.sircip.entity;
 
 import jakarta.persistence.Embeddable;
+import lombok.Getter;
 
 import java.io.Serializable;
 import java.util.Objects;
 
 @Embeddable
+@Getter
 public class PadronId implements Serializable {
     private Integer periodo;
     private String cuit;

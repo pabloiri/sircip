@@ -1,4 +1,4 @@
-package com.cabreras.sircip;
+package com.cabreras.sircip.repo;
 
 import org.springframework.stereotype.Component;
 import jakarta.annotation.PostConstruct;

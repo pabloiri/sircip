@@ -1,28 +1,24 @@
-package com.cabreras.sircip;
+package com.cabreras.sircip.service;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
+import com.cabreras.sircip.dto.PercepcionResponse;
+import com.cabreras.sircip.entity.Padron;
+import com.cabreras.sircip.repo.AlicuotaCache;
+import com.cabreras.sircip.repo.JurisdiccionesCache;
 import lombok.AllArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static java.math.RoundingMode.HALF_UP;
 
-@RestController
-@RequestMapping(path = "/taxengine/v1/")
+@Service
 @AllArgsConstructor
-@Validated
-public class PadronController {
+public class PercepcionService {
 
     private static final int SCALE = 2;
     private static final int SCALE_MULTIPLIER = 100;
@@ -31,26 +27,19 @@ public class PadronController {
     private static final long CIEN_PORCIENTO = 10000L;         // 100.00% (en escala 2)
     private static final BigDecimal SCALE_MULTIPLIER_BD = BigDecimal.valueOf(SCALE_MULTIPLIER);
 
-    private final PadronRepository padronRepository;
+    private final PadronService padronService;
     private final AlicuotaCache alicuotaCache;
     private final JurisdiccionesCache jurisdiccionesCache;
 
-    @GetMapping(path = "/percepciones")
-    public ResponseEntity<List<PadronResponse>> consultarPadron(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
-            @RequestParam String cuit,
-            @RequestParam @Min(901) @Max(924) Short jurisdiccion,
-            @RequestParam(required = false) BigDecimal baseImponible) {
-
-        int periodoParam = (fecha.getYear() * 100) + fecha.getMonthValue();
-        PadronId idCompuesto = new PadronId(periodoParam, cuit);
-        return padronRepository.findById(idCompuesto)
+    public List<PercepcionResponse> percepcion(LocalDate fecha, String cuit, Short jurisdiccion, BigDecimal baseImponible) {
+        YearMonth periodo = YearMonth.from(fecha);
+        return padronService.getPadron(periodo, cuit)
                 .map(padron -> respuestaEnPadron(jurisdiccion, baseImponible, padron))
                 .orElseGet(() -> respuestaFueraPadron(jurisdiccion, baseImponible));
     }
 
-    private ResponseEntity<List<PadronResponse>> respuestaEnPadron(Short jurisdiccion, BigDecimal baseImponible, Padron padron) {
-        List<PadronResponse> respuesta = new ArrayList<>();
+    private List<PercepcionResponse> respuestaEnPadron(Short jurisdiccion, BigDecimal baseImponible, Padron padron) {
+        List<PercepcionResponse> respuesta = new ArrayList<>();
         var alicuota = alicuotaCache.obtenerPorcentaje(padron.getLetraAlicuota());
         var baseLong = bigDecimalToLong(baseImponible);
         var respuestaSIRC = calcularRespuesta("SIRC", baseLong, alicuota);
@@ -59,15 +48,15 @@ public class PadronController {
             var respuestaSIRX = calcularRespuesta("SIRX", baseLong, ALICUOTA_SOBRETASA);
             respuesta.add(respuestaSIRX);
         }
-        return ResponseEntity.ok(respuesta);
+        return respuesta;
     }
 
-    private ResponseEntity<List<PadronResponse>> respuestaFueraPadron(Short jurisdiccion, BigDecimal baseImponible) {
+    private List<PercepcionResponse> respuestaFueraPadron(Short jurisdiccion, BigDecimal baseImponible) {
         if (!jurisdiccionesCache.adheridaSircip(jurisdiccion))
-            return ResponseEntity.notFound().build();
+            return Collections.emptyList();
         var baseLong = bigDecimalToLong(baseImponible);
         var respuestaSIRY = calcularRespuesta("SIRY", baseLong, ALICUOTA_FUERA_PADRON);
-        return ResponseEntity.ok(List.of(respuestaSIRY));
+        return List.of(respuestaSIRY);
     }
 
     private boolean haySobretasa(String campo7, Short jurisdiccion) {
@@ -75,11 +64,11 @@ public class PadronController {
         return campo7 != null && indice >= 0 && indice < campo7.length() && campo7.charAt(indice) == '2';
     }
 
-    private PadronResponse calcularRespuesta(String codigoImpuesto, Long baseImponible, Long alicuota) {
+    private PercepcionResponse calcularRespuesta(String codigoImpuesto, Long baseImponible, Long alicuota) {
         if (baseImponible == null || baseImponible == 0L)
-            return new PadronResponse(codigoImpuesto, longToBigDecimal(alicuota), null, null);
+            return new PercepcionResponse(codigoImpuesto, longToBigDecimal(alicuota), null, null);
         else
-            return new PadronResponse(codigoImpuesto,
+            return new PercepcionResponse(codigoImpuesto,
                     longToBigDecimal(alicuota),
                     longToBigDecimal(baseImponible),
                     longToBigDecimal((baseImponible * alicuota) / CIEN_PORCIENTO));

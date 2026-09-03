@@ -1,4 +1,4 @@
-package com.cabreras.sircip;
+package com.cabreras.sircip.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

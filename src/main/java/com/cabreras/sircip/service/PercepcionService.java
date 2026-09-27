@@ -1,6 +1,8 @@
 package com.cabreras.sircip.service;
 
+import com.cabreras.sircip.dto.DeclaracionRequest;
 import com.cabreras.sircip.dto.PercepcionResponse;
+import com.cabreras.sircip.dto.PercepcionTotal;
 import com.cabreras.sircip.entity.Padron;
 import com.cabreras.sircip.repo.AlicuotaCache;
 import com.cabreras.sircip.repo.JurisdiccionesCache;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -26,6 +29,11 @@ public class PercepcionService {
     private static final long ALICUOTA_SOBRETASA = 100L;       // 1.00%
     private static final long CIEN_PORCIENTO = 10000L;         // 100.00% (en escala 2)
     private static final BigDecimal SCALE_MULTIPLIER_BD = BigDecimal.valueOf(SCALE_MULTIPLIER);
+    public static final String SIRC = "SIRC";
+    public static final String SIRX = "SIRX";
+    public static final String SIRY = "SIRY";
+
+    private static final DateTimeFormatter formateadorFecha = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final PadronService padronService;
     private final AlicuotaCache alicuotaCache;
@@ -38,14 +46,28 @@ public class PercepcionService {
                 .orElseGet(() -> respuestaFueraPadron(jurisdiccion, baseImponible));
     }
 
+    public PercepcionTotal percepcionSircip(DeclaracionRequest req) {
+        LocalDate fecha = LocalDate.parse(req.fecha(), formateadorFecha);
+        Short jurisdiccion = Short.valueOf(req.jurisdiccion());
+        BigDecimal monto = new BigDecimal(req.monto());
+        YearMonth periodo = YearMonth.from(fecha);
+        return padronService.getPadron(periodo, req.cuit())
+                .map(padron -> respuestaEnPadron(jurisdiccion, monto, padron))
+                .orElse(Collections.emptyList())
+                .stream().filter(response -> SIRC.equals(response.codigoImpuesto()))
+                .findFirst()
+                .map(x -> new PercepcionTotal(x.alicuota(), x.importe()))
+                .orElse(new PercepcionTotal(BigDecimal.ZERO, BigDecimal.ZERO));
+    }
+
     private List<PercepcionResponse> respuestaEnPadron(Short jurisdiccion, BigDecimal baseImponible, Padron padron) {
         List<PercepcionResponse> respuesta = new ArrayList<>();
         var alicuota = alicuotaCache.obtenerPorcentaje(padron.getLetraAlicuota());
         var baseLong = bigDecimalToLong(baseImponible);
-        var respuestaSIRC = calcularRespuesta("SIRC", baseLong, alicuota);
+        var respuestaSIRC = calcularRespuesta(SIRC, baseLong, alicuota);
         respuesta.add(respuestaSIRC);
         if (haySobretasa(padron.getCampo7() + "", jurisdiccion)) {
-            var respuestaSIRX = calcularRespuesta("SIRX", baseLong, ALICUOTA_SOBRETASA);
+            var respuestaSIRX = calcularRespuesta(SIRX, baseLong, ALICUOTA_SOBRETASA);
             respuesta.add(respuestaSIRX);
         }
         return respuesta;
@@ -55,7 +77,7 @@ public class PercepcionService {
         if (!jurisdiccionesCache.adheridaSircip(jurisdiccion))
             return Collections.emptyList();
         var baseLong = bigDecimalToLong(baseImponible);
-        var respuestaSIRY = calcularRespuesta("SIRY", baseLong, ALICUOTA_FUERA_PADRON);
+        var respuestaSIRY = calcularRespuesta(SIRY, baseLong, ALICUOTA_FUERA_PADRON);
         return List.of(respuestaSIRY);
     }
 

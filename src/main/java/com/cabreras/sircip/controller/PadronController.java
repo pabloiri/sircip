@@ -8,6 +8,7 @@ import com.cabreras.sircip.service.PadronService;
 import com.cabreras.sircip.service.PercepcionService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -35,6 +36,8 @@ import java.util.zip.ZipOutputStream;
 @Validated
 public class PadronController {
 
+    public static final String CUIT_MSG = "El CUIT debe tener exactamente 11 dígitos numéricos.";
+
     private final PadronService padronService;
     private final PercepcionService percepcionService;
     private final DeclaracionService declaracionService;
@@ -42,7 +45,7 @@ public class PadronController {
     @GetMapping(path = "/percepciones")
     public ResponseEntity<List<PercepcionResponse>> percepcion(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
-            @RequestParam String cuit,
+            @RequestParam @Pattern(regexp = "^\\d{11}$", message = CUIT_MSG) String cuit,
             @RequestParam @Min(901) @Max(924) Short jurisdiccion,
             @RequestParam(required = false) BigDecimal baseImponible) {
         List<PercepcionResponse> responses = percepcionService.percepcion(fecha, cuit, jurisdiccion, baseImponible);
@@ -58,13 +61,14 @@ public class PadronController {
 
     @PostMapping(path = "/declaracion")
     public ResponseEntity<byte[]> declaracion(@RequestBody List<DeclaracionRequest> solicitudes) {
-        String contenidoTxt = declaracionService.declaracion(solicitudes);
-        byte[] datosArchivo = contenidoTxt.getBytes(StandardCharsets.UTF_8);
-        HttpHeaders cabeceras = new HttpHeaders();
-        cabeceras.setContentType(MediaType.TEXT_PLAIN);
-        cabeceras.setContentDispositionFormData("attachment", "declaracion.txt");
-        cabeceras.setContentLength(datosArchivo.length);
-        return new ResponseEntity<>(datosArchivo, cabeceras, HttpStatus.OK);
+        if (solicitudes == null || solicitudes.isEmpty() || declaracionService.hayInvalidas(solicitudes))
+            return ResponseEntity.badRequest().build();
+        byte[] datosArchivo = declaracionService.declaracion(solicitudes).getBytes(StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .contentType(new MediaType(MediaType.TEXT_PLAIN, StandardCharsets.UTF_8))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=declaracion.txt")
+                .contentLength(datosArchivo.length)
+                .body(datosArchivo);
     }
 
     // Temporal, por si hace falta.

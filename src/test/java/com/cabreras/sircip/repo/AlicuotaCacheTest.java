@@ -31,28 +31,16 @@ class AlicuotaCacheTest {
     }
 
     @ParameterizedTest
-    @CsvSource({
-            "A, 350",
-            "B, 250",
-            "E, 100",
-            "F, 0",
-            "G, 420",
-            "H, 500"
-    })
+    @CsvSource({"A, 0", "B, 1", "C, 5", "D, 10", "E, 20", "F, 30", "G, 40", "H, 50", "I, 60", "J, 70", "K, 80",
+            "L, 100", "M, 120", "N, 140", "O, 150", "P, 160", "Q, 180", "R, 200", "S, 250", "T, 300", "U, 350",
+            "V, 400", "W, 450", "X, 500"})
     @DisplayName("Debe retornar el valor correcto en escala 2 para letras válidas en mayúscula")
     void obtenerPorcentaje_CuandoLetraExisteEnMayuscula_RetornaValorEscalaDos(String letra, long valorEsperado) {
         assertEquals(valorEsperado, cache.obtenerPorcentaje(letra));
     }
 
     @ParameterizedTest
-    @CsvSource({
-            "a, 350",
-            "b, 250",
-            "e, 100",
-            "f, 0",
-            "g, 420",
-            "h, 500"
-    })
+    @CsvSource({"a, 0", "b, 1", "e, 20", "f, 30", "g, 40", "h, 50"})
     @DisplayName("Debe retornar el valor correcto en escala 2 aunque la letra se envíe en minúscula")
     void obtenerPorcentaje_CuandoLetraExisteEnMinuscula_RetornaValorEscalaDos(String letra, long valorEsperado) {
         assertEquals(valorEsperado, cache.obtenerPorcentaje(letra));

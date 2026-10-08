@@ -109,6 +109,7 @@ public class DeclaracionService {
     }
 
     // Solo se contempla el caso en que hay 1 o 2 elementos en cada lista
+    // O sea 1 o 2 percepciones por comprobante
     private static boolean hayDiferencias(List<DeclaracionRequest> recibidas, List<PercepcionResponse> calculadas) {
         int n = recibidas.size();
         if (n != calculadas.size())

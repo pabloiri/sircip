@@ -14,6 +14,12 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     show-sql: false
 
+  cache:
+    type: caffeine
+    cache-names: padron
+    caffeine:
+      spec: maximumSize=200000,expireAfterWrite=10m
+
   web:
     error:
       include-message: always

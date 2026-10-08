@@ -2,7 +2,6 @@ package com.cabreras.sircip.service;
 
 import com.cabreras.sircip.dto.DeclaracionRequest;
 import com.cabreras.sircip.dto.PercepcionResponse;
-import com.cabreras.sircip.dto.PercepcionTotal;
 import com.cabreras.sircip.entity.Padron;
 import com.cabreras.sircip.repo.AlicuotaCache;
 import com.cabreras.sircip.repo.JurisdiccionesCache;
@@ -46,18 +45,11 @@ public class PercepcionService {
                 .orElseGet(() -> respuestaFueraPadron(jurisdiccion, baseImponible));
     }
 
-    public PercepcionTotal percepcionSircip(DeclaracionRequest req) {
+    public List<PercepcionResponse> percepciones(DeclaracionRequest req) {
         LocalDate fecha = LocalDate.parse(req.fecha(), formateadorFecha);
         Short jurisdiccion = Short.valueOf(req.jurisdiccion());
         BigDecimal monto = new BigDecimal(req.monto());
-        YearMonth periodo = YearMonth.from(fecha);
-        return padronService.getPadron(periodo, req.cuit())
-                .map(padron -> respuestaEnPadron(jurisdiccion, monto, padron))
-                .orElse(Collections.emptyList())
-                .stream().filter(response -> SIRC.equals(response.codigoImpuesto()))
-                .findFirst()
-                .map(x -> new PercepcionTotal(x.alicuota(), x.importe()))
-                .orElse(new PercepcionTotal(BigDecimal.ZERO, BigDecimal.ZERO));
+        return percepcion(fecha, req.cuit(), jurisdiccion, monto);
     }
 
     private List<PercepcionResponse> respuestaEnPadron(Short jurisdiccion, BigDecimal baseImponible, Padron padron) {

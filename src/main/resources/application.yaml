@@ -30,8 +30,8 @@ spring:
 logging:
   level:
     root: INFO
-    org.hibernate.SQL: WARN
-    org.hibernate.orm.jdbc.bind: WARN
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
     org.zalando.logbook: TRACE
 
 logbook:

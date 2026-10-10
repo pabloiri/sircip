@@ -145,6 +145,11 @@ public class DeclaracionService {
     }
 
     private boolean esInvalida(DeclaracionRequest req) {
+        if (esVacio(req.fecha()) || esVacio(req.jurisdiccion())
+                || esVacio(req.monto()) || esVacio(req.alicuota())
+                || esVacio(req.montoPercibido())) {
+            return true;
+        }
         try {
             LocalDate.parse(req.fecha(), formateadorFecha);
             Short.valueOf(req.jurisdiccion());
@@ -155,6 +160,10 @@ public class DeclaracionService {
         } catch (DateTimeParseException | NumberFormatException e) {
             return true;
         }
+    }
+
+    private boolean esVacio(String valor) {
+        return valor == null || valor.isBlank();
     }
 
 }

@@ -42,7 +42,7 @@ public class PercepcionService {
         YearMonth periodo = YearMonth.from(fecha);
         return padronService.getPadron(periodo, cuit)
                 .map(padron -> respuestaEnPadron(jurisdiccion, baseImponible, padron))
-                .orElseGet(() -> respuestaFueraPadron(jurisdiccion, baseImponible));
+                .orElseGet(() -> respuestaFueraPadron(jurisdiccion, baseImponible, periodo));
     }
 
     public List<PercepcionResponse> percepciones(DeclaracionRequest req) {
@@ -65,8 +65,8 @@ public class PercepcionService {
         return respuesta;
     }
 
-    private List<PercepcionResponse> respuestaFueraPadron(Short jurisdiccion, BigDecimal baseImponible) {
-        if (!jurisdiccionesCache.adheridaSircip(jurisdiccion))
+    private List<PercepcionResponse> respuestaFueraPadron(Short jurisdiccion, BigDecimal baseImponible, YearMonth periodo) {
+        if (!jurisdiccionesCache.adheridaSircip(jurisdiccion, periodo))
             return Collections.emptyList();
         var baseLong = bigDecimalToLong(baseImponible);
         var respuestaSIRY = calcularRespuesta(SIRY, baseLong, ALICUOTA_FUERA_PADRON);

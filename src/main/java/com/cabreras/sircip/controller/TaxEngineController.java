@@ -27,7 +27,7 @@ import java.util.List;
 @RequestMapping(path = "/taxengine/v1/")
 @AllArgsConstructor
 @Validated
-public class PadronController {
+public class TaxEngineController {
 
     public static final String CUIT_MSG = "El CUIT debe tener exactamente 11 dígitos numéricos.";
 

@@ -2,44 +2,42 @@ package com.cabreras.sircip.repo;
 
 import org.springframework.stereotype.Component;
 import jakarta.annotation.PostConstruct;
+
+import java.time.YearMonth;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class JurisdiccionesCache {
 
-    private final Map<Short, Boolean> mapa = new ConcurrentHashMap<>();
+    // jurisdiccion -> periodo desde el cual está adherida a SIRCIP
+    private final Map<Short, YearMonth> vigenciaDesde = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void init() {
-        mapa.put((short) 901, true);
-        mapa.put((short) 902, false);
-        mapa.put((short) 903, true);
-        mapa.put((short) 904, false);
-        mapa.put((short) 905, true);
-        mapa.put((short) 906, false);
-        mapa.put((short) 907, true);
-        mapa.put((short) 908, false);
-        mapa.put((short) 909, true);
-        mapa.put((short) 910, false);
-        mapa.put((short) 911, true);
-        mapa.put((short) 912, false);
-        mapa.put((short) 913, true);
-        mapa.put((short) 914, false);
-        mapa.put((short) 915, true);
-        mapa.put((short) 916, true);
-        mapa.put((short) 917, true);
-        mapa.put((short) 918, true);
-        mapa.put((short) 919, true);
-        mapa.put((short) 920, true);
-        mapa.put((short) 921, true);
-        mapa.put((short) 922, true);
-        mapa.put((short) 923, true);
-        mapa.put((short) 924, true);
+        vigenciaDesde.put((short) 901, YearMonth.of(2026, 12));
+        vigenciaDesde.put((short) 903, YearMonth.of(2026, 12));
+        vigenciaDesde.put((short) 905, YearMonth.of(2026, 12));
+        vigenciaDesde.put((short) 907, YearMonth.of(2026, 12));
+        vigenciaDesde.put((short) 909, YearMonth.of(2026, 12));
+        vigenciaDesde.put((short) 911, YearMonth.of(2026, 12));
+        vigenciaDesde.put((short) 913, YearMonth.of(2026, 12));
+        vigenciaDesde.put((short) 915, YearMonth.of(2026, 12));
+        vigenciaDesde.put((short) 916, YearMonth.of(2026, 12));
+        vigenciaDesde.put((short) 917, YearMonth.of(2026, 12));
+        vigenciaDesde.put((short) 918, YearMonth.of(2026, 12));
+        vigenciaDesde.put((short) 919, YearMonth.of(2026, 12));
+        vigenciaDesde.put((short) 920, YearMonth.of(2026, 12));
+        vigenciaDesde.put((short) 921, YearMonth.of(2026, 12));
+        vigenciaDesde.put((short) 922, YearMonth.of(2026, 12));
+        vigenciaDesde.put((short) 923, YearMonth.of(2026, 12));
+        vigenciaDesde.put((short) 924, YearMonth.of(2026, 12));
     }
 
-    public Boolean adheridaSircip(Short id) {
-        if (id == null) return false;
-        return mapa.getOrDefault(id, false);
+    public Boolean adheridaSircip(Short id, YearMonth periodo) {
+        if (id == null || periodo == null) return false;
+        YearMonth desde = vigenciaDesde.get(id);
+        if (desde == null) return false;   // sin fecha => no adherida
+        return !periodo.isBefore(desde);   // periodo >= desde
     }
 }

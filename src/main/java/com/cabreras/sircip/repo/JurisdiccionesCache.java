@@ -15,23 +15,25 @@ public class JurisdiccionesCache {
 
     @PostConstruct
     public void init() {
-        vigenciaDesde.put((short) 901, YearMonth.of(2026, 12));
-        vigenciaDesde.put((short) 903, YearMonth.of(2026, 12));
-        vigenciaDesde.put((short) 905, YearMonth.of(2026, 12));
-        vigenciaDesde.put((short) 907, YearMonth.of(2026, 12));
-        vigenciaDesde.put((short) 909, YearMonth.of(2026, 12));
-        vigenciaDesde.put((short) 911, YearMonth.of(2026, 12));
-        vigenciaDesde.put((short) 913, YearMonth.of(2026, 12));
-        vigenciaDesde.put((short) 915, YearMonth.of(2026, 12));
-        vigenciaDesde.put((short) 916, YearMonth.of(2026, 12));
-        vigenciaDesde.put((short) 917, YearMonth.of(2026, 12));
-        vigenciaDesde.put((short) 918, YearMonth.of(2026, 12));
-        vigenciaDesde.put((short) 919, YearMonth.of(2026, 12));
-        vigenciaDesde.put((short) 920, YearMonth.of(2026, 12));
-        vigenciaDesde.put((short) 921, YearMonth.of(2026, 12));
-        vigenciaDesde.put((short) 922, YearMonth.of(2026, 12));
-        vigenciaDesde.put((short) 923, YearMonth.of(2026, 12));
-        vigenciaDesde.put((short) 924, YearMonth.of(2026, 12));
+        // TODO : cambiar la vigencia
+        YearMonth vigencia = YearMonth.of(2026, 10);
+        vigenciaDesde.put((short) 901, vigencia);
+        vigenciaDesde.put((short) 903, vigencia);
+        vigenciaDesde.put((short) 905, vigencia);
+        vigenciaDesde.put((short) 907, vigencia);
+        vigenciaDesde.put((short) 909, vigencia);
+        vigenciaDesde.put((short) 911, vigencia);
+        vigenciaDesde.put((short) 913, vigencia);
+        vigenciaDesde.put((short) 915, vigencia);
+        vigenciaDesde.put((short) 916, vigencia);
+        vigenciaDesde.put((short) 917, vigencia);
+        vigenciaDesde.put((short) 918, vigencia);
+        vigenciaDesde.put((short) 919, vigencia);
+        vigenciaDesde.put((short) 920, vigencia);
+        vigenciaDesde.put((short) 921, vigencia);
+        vigenciaDesde.put((short) 922, vigencia);
+        vigenciaDesde.put((short) 923, vigencia);
+        vigenciaDesde.put((short) 924, vigencia);
     }
 
     public Boolean adheridaSircip(Short id, YearMonth periodo) {

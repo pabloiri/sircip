@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class JurisdiccionesCacheTest {
 
-    private static final YearMonth VIGENCIA = YearMonth.of(2026, 12);
+    private static final YearMonth VIGENCIA = YearMonth.of(2026, 10);
     private static final YearMonth ANTERIOR = VIGENCIA.minusMonths(1);
     private static final YearMonth POSTERIOR = VIGENCIA.plusMonths(1);
 

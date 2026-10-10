@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
@@ -16,18 +17,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static java.math.RoundingMode.HALF_UP;
-
 @Service
 @AllArgsConstructor
 public class PercepcionService {
 
     private static final int SCALE = 2;
-    private static final int SCALE_MULTIPLIER = 100;
-    private static final long ALICUOTA_FUERA_PADRON = 200L;    // 2.00%
-    private static final long ALICUOTA_SOBRETASA = 100L;       // 1.00%
-    private static final long CIEN_PORCIENTO = 10000L;         // 100.00% (en escala 2)
-    private static final BigDecimal SCALE_MULTIPLIER_BD = BigDecimal.valueOf(SCALE_MULTIPLIER);
+    private static final RoundingMode REDONDEO = RoundingMode.HALF_UP;
+    private static final BigDecimal CIEN = new BigDecimal("100");
+    private static final BigDecimal ALICUOTA_FUERA_PADRON = new BigDecimal("2.00");  // 2%
+    private static final BigDecimal ALICUOTA_SOBRETASA = new BigDecimal("1.00");     // 1%
+
     public static final String SIRC = "SIRC";
     public static final String SIRX = "SIRX";
     public static final String SIRY = "SIRY";
@@ -38,11 +37,11 @@ public class PercepcionService {
     private final AlicuotaCache alicuotaCache;
     private final JurisdiccionesCache jurisdiccionesCache;
 
-    public List<PercepcionResponse> percepcion(LocalDate fecha, String cuit, Short jurisdiccion, BigDecimal baseImponible) {
+    public List<PercepcionResponse> percepcion(LocalDate fecha, String cuit, Short jurisdiccion, BigDecimal monto) {
         YearMonth periodo = YearMonth.from(fecha);
         return padronService.getPadron(periodo, cuit)
-                .map(padron -> respuestaEnPadron(jurisdiccion, baseImponible, padron))
-                .orElseGet(() -> respuestaFueraPadron(jurisdiccion, baseImponible, periodo));
+                .map(padron -> respuestaEnPadron(jurisdiccion, monto, padron))
+                .orElseGet(() -> respuestaFueraPadron(jurisdiccion, monto, periodo));
     }
 
     public List<PercepcionResponse> percepciones(DeclaracionRequest req) {
@@ -52,25 +51,20 @@ public class PercepcionService {
         return percepcion(fecha, req.cuit(), jurisdiccion, monto);
     }
 
-    private List<PercepcionResponse> respuestaEnPadron(Short jurisdiccion, BigDecimal baseImponible, Padron padron) {
+    private List<PercepcionResponse> respuestaEnPadron(Short jurisdiccion, BigDecimal monto, Padron padron) {
         List<PercepcionResponse> respuesta = new ArrayList<>();
-        var alicuota = alicuotaCache.obtenerPorcentaje(padron.getLetraAlicuota());
-        var baseLong = bigDecimalToLong(baseImponible);
-        var respuestaSIRC = calcularRespuesta(SIRC, baseLong, alicuota);
-        respuesta.add(respuestaSIRC);
+        BigDecimal alicuota = alicuotaCache.obtenerPorcentaje(padron.getLetraAlicuota());
+        respuesta.add(calcularRespuesta(SIRC, monto, alicuota));
         if (haySobretasa(padron.getCampo7() + "", jurisdiccion)) {
-            var respuestaSIRX = calcularRespuesta(SIRX, baseLong, ALICUOTA_SOBRETASA);
-            respuesta.add(respuestaSIRX);
+            respuesta.add(calcularRespuesta(SIRX, monto, ALICUOTA_SOBRETASA));
         }
         return respuesta;
     }
 
-    private List<PercepcionResponse> respuestaFueraPadron(Short jurisdiccion, BigDecimal baseImponible, YearMonth periodo) {
+    private List<PercepcionResponse> respuestaFueraPadron(Short jurisdiccion, BigDecimal monto, YearMonth periodo) {
         if (!jurisdiccionesCache.adheridaSircip(jurisdiccion, periodo))
             return Collections.emptyList();
-        var baseLong = bigDecimalToLong(baseImponible);
-        var respuestaSIRY = calcularRespuesta(SIRY, baseLong, ALICUOTA_FUERA_PADRON);
-        return List.of(respuestaSIRY);
+        return List.of(calcularRespuesta(SIRY, monto, ALICUOTA_FUERA_PADRON));
     }
 
     private boolean haySobretasa(String campo7, Short jurisdiccion) {
@@ -78,24 +72,13 @@ public class PercepcionService {
         return campo7 != null && indice >= 0 && indice < campo7.length() && campo7.charAt(indice) == '2';
     }
 
-    private PercepcionResponse calcularRespuesta(String codigoImpuesto, Long baseImponible, Long alicuota) {
-        if (baseImponible == null || baseImponible == 0L)
-            return new PercepcionResponse(codigoImpuesto, longToBigDecimal(alicuota), null, null);
-        else
-            return new PercepcionResponse(codigoImpuesto,
-                    longToBigDecimal(alicuota),
-                    longToBigDecimal(baseImponible),
-                    longToBigDecimal((baseImponible * alicuota) / CIEN_PORCIENTO));
+    private PercepcionResponse calcularRespuesta(String codigoImpuesto, BigDecimal monto, BigDecimal alicuota) {
+        if (monto == null || monto.signum() == 0)
+            return new PercepcionResponse(codigoImpuesto, alicuota, null, null);
+        // Único punto de redondeo: base (2 dec.) x alícuota (2 dec.) / 100 -> 2 decimales
+        BigDecimal percepcion = monto
+                .multiply(alicuota)
+                .divide(CIEN, SCALE, REDONDEO);
+        return new PercepcionResponse(codigoImpuesto, alicuota, monto, percepcion);
     }
-
-    // Convierte BigDecimal a Long con escala 2 (multiplica por 100)
-    private Long bigDecimalToLong(BigDecimal valor) {
-        return valor == null ? null : valor.setScale(SCALE, HALF_UP).multiply(SCALE_MULTIPLIER_BD).longValue();
-    }
-
-    // Convierte Long (escala 2) a BigDecimal con 2 decimales
-    private BigDecimal longToBigDecimal(Long valor) {
-        return valor == null ? null : BigDecimal.valueOf(valor, SCALE);
-    }
-
 }

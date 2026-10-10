@@ -31,7 +31,7 @@ public class DeclaracionService {
     public static final String DIFERENCIAS = "DIFERENCIAS";
     private static final DateTimeFormatter formateadorFecha = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final String ERROR_CALCULO =
-            "No se pudo calcular la percepción para tipo comprobante %s, letra %s, número comprobante %s, punto venta %s";
+        "No se pudo calcular la percepción para tipo comprobante %s, letra %s, número comprobante %s, punto venta %s";
 
     private final PadronService padronService;
     private final PercepcionService percepcionService;
@@ -153,13 +153,17 @@ public class DeclaracionService {
         try {
             LocalDate.parse(req.fecha(), formateadorFecha);
             Short.valueOf(req.jurisdiccion());
-            new BigDecimal(req.monto());
-            new BigDecimal(req.alicuota());
-            new BigDecimal(req.montoPercibido());
-            return false;
+            BigDecimal monto = new BigDecimal(req.monto());
+            BigDecimal alicuota = new BigDecimal(req.alicuota());
+            BigDecimal montoPercibido = new BigDecimal(req.montoPercibido());
+            return malDecimales(monto) || malDecimales(alicuota) || malDecimales(montoPercibido);
         } catch (DateTimeParseException | NumberFormatException e) {
             return true;
         }
+    }
+
+    private boolean malDecimales(BigDecimal valor) {
+        return valor.stripTrailingZeros().scale() > 2;
     }
 
     private boolean esVacio(String valor) {

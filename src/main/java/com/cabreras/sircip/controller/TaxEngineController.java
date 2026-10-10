@@ -6,6 +6,7 @@ import com.cabreras.sircip.entity.Padron;
 import com.cabreras.sircip.service.DeclaracionService;
 import com.cabreras.sircip.service.PadronService;
 import com.cabreras.sircip.service.PercepcionService;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
@@ -30,6 +31,7 @@ import java.util.List;
 public class TaxEngineController {
 
     public static final String CUIT_MSG = "El CUIT debe tener exactamente 11 dígitos numéricos.";
+    public static final String DECIMALES_MSG = "La base imponible admite como máximo 2 decimales";
 
     private final PadronService padronService;
     private final PercepcionService percepcionService;
@@ -40,7 +42,9 @@ public class TaxEngineController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
             @RequestParam @Pattern(regexp = "^\\d{11}$", message = CUIT_MSG) String cuit,
             @RequestParam @Min(901) @Max(924) Short jurisdiccion,
-            @RequestParam(required = false) BigDecimal baseImponible) {
+            @RequestParam(required = false)
+            @Digits(integer = 13, fraction = 2, message = DECIMALES_MSG)
+            BigDecimal baseImponible) {
         List<PercepcionResponse> responses = percepcionService.percepcion(fecha, cuit, jurisdiccion, baseImponible);
         return responses.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(responses);
     }

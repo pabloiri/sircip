@@ -1,52 +1,50 @@
 package com.cabreras.sircip.repo;
 
-import org.springframework.stereotype.Component;
 import jakarta.annotation.PostConstruct;
+import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class AlicuotaCache {
 
-    // Escala 2: todos los valores se almacenan multiplicados por 100
-    public static final long ZERO = 0L;
+    public static final BigDecimal ZERO = new BigDecimal("0.00");
 
-    private final Map<String, Long> mapa = new ConcurrentHashMap<>();
+    private final Map<String, BigDecimal> mapa = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void init() {
-        // Los valores se almacenan en escala 2 (multiplicados por 100)
-        mapa.put("A", 0L);
-        mapa.put("B", 1L);
-        mapa.put("C", 5L);
-        mapa.put("D", 10L);
-        mapa.put("E", 20L);
-        mapa.put("F", 30L);
-        mapa.put("G", 40L);
-        mapa.put("H", 50L);
-        mapa.put("I", 60L);
-        mapa.put("J", 70L);
-        mapa.put("K", 80L);
-        mapa.put("L", 100L);
-        mapa.put("M", 120L);
-        mapa.put("N", 140L);
-        mapa.put("O", 150L);
-        mapa.put("P", 160L);
-        mapa.put("Q", 180L);
-        mapa.put("R", 200L);
-        mapa.put("S", 250L);
-        mapa.put("T", 300L);
-        mapa.put("U", 350L);
-        mapa.put("V", 400L);
-        mapa.put("W", 450L);
-        mapa.put("X", 500L);
+        // Valores en porcentaje (2.00 = 2%)
+        mapa.put("A", new BigDecimal("0.00"));
+        mapa.put("B", new BigDecimal("0.01"));
+        mapa.put("C", new BigDecimal("0.05"));
+        mapa.put("D", new BigDecimal("0.10"));
+        mapa.put("E", new BigDecimal("0.20"));
+        mapa.put("F", new BigDecimal("0.30"));
+        mapa.put("G", new BigDecimal("0.40"));
+        mapa.put("H", new BigDecimal("0.50"));
+        mapa.put("I", new BigDecimal("0.60"));
+        mapa.put("J", new BigDecimal("0.70"));
+        mapa.put("K", new BigDecimal("0.80"));
+        mapa.put("L", new BigDecimal("1.00"));
+        mapa.put("M", new BigDecimal("1.20"));
+        mapa.put("N", new BigDecimal("1.40"));
+        mapa.put("O", new BigDecimal("1.50"));
+        mapa.put("P", new BigDecimal("1.60"));
+        mapa.put("Q", new BigDecimal("1.80"));
+        mapa.put("R", new BigDecimal("2.00"));
+        mapa.put("S", new BigDecimal("2.50"));
+        mapa.put("T", new BigDecimal("3.00"));
+        mapa.put("U", new BigDecimal("3.50"));
+        mapa.put("V", new BigDecimal("4.00"));
+        mapa.put("W", new BigDecimal("4.50"));
+        mapa.put("X", new BigDecimal("5.00"));
     }
 
-    /**
-     * Devuelve el porcentaje en escala 2 (multiplicado por 100)
-     */
-    public long obtenerPorcentaje(String letra) {
+    /** Devuelve el porcentaje (por ejemplo 2.00 para el 2%). Nunca devuelve null. */
+    public BigDecimal obtenerPorcentaje(String letra) {
         if (letra == null) return ZERO;
         return mapa.getOrDefault(letra.toUpperCase(), ZERO);
     }

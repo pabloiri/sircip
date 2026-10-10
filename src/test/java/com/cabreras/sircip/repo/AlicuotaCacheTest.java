@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.math.BigDecimal;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class AlicuotaCacheTest {
@@ -31,18 +33,18 @@ class AlicuotaCacheTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"A, 0", "B, 1", "C, 5", "D, 10", "E, 20", "F, 30", "G, 40", "H, 50", "I, 60", "J, 70", "K, 80",
-            "L, 100", "M, 120", "N, 140", "O, 150", "P, 160", "Q, 180", "R, 200", "S, 250", "T, 300", "U, 350",
-            "V, 400", "W, 450", "X, 500"})
-    @DisplayName("Debe retornar el valor correcto en escala 2 para letras válidas en mayúscula")
-    void obtenerPorcentaje_CuandoLetraExisteEnMayuscula_RetornaValorEscalaDos(String letra, long valorEsperado) {
+    @CsvSource({"A, 0.00", "B, 0.01", "C, 0.05", "D, 0.10", "E, 0.20", "F, 0.30", "G, 0.40", "H, 0.50",
+            "I, 0.60", "J, 0.70", "K, 0.80", "L, 1.00", "M, 1.20", "N, 1.40", "O, 1.50", "P, 1.60",
+            "Q, 1.80", "R, 2.00", "S, 2.50", "T, 3.00", "U, 3.50", "V, 4.00", "W, 4.50", "X, 5.00"})
+    @DisplayName("Debe retornar el porcentaje correcto para letras válidas en mayúscula")
+    void obtenerPorcentaje_CuandoLetraExisteEnMayuscula_RetornaPorcentaje(String letra, BigDecimal valorEsperado) {
         assertEquals(valorEsperado, cache.obtenerPorcentaje(letra));
     }
 
     @ParameterizedTest
-    @CsvSource({"a, 0", "b, 1", "e, 20", "f, 30", "g, 40", "h, 50"})
-    @DisplayName("Debe retornar el valor correcto en escala 2 aunque la letra se envíe en minúscula")
-    void obtenerPorcentaje_CuandoLetraExisteEnMinuscula_RetornaValorEscalaDos(String letra, long valorEsperado) {
+    @CsvSource({"a, 0.00", "b, 0.01", "e, 0.20", "f, 0.30", "g, 0.40", "h, 0.50"})
+    @DisplayName("Debe retornar el porcentaje correcto aunque la letra se envíe en minúscula")
+    void obtenerPorcentaje_CuandoLetraExisteEnMinuscula_RetornaPorcentaje(String letra, BigDecimal valorEsperado) {
         assertEquals(valorEsperado, cache.obtenerPorcentaje(letra));
     }
 }

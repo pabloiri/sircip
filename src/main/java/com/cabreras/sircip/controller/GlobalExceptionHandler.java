@@ -2,6 +2,7 @@ package com.cabreras.sircip.controller;
 
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -41,6 +42,14 @@ public class GlobalExceptionHandler {
         }
         errors.put(paramName, errorMessage);
         return buildErrorResponse("Error en el tipo de datos", errors);
+    }
+
+    @ExceptionHandler(PadronNoEncontradoException.class)
+    public ResponseEntity<Map<String, String>> padronNoEncontrado(PadronNoEncontradoException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of(
+                        "codigo", "PADRON_NO_ENCONTRADO",
+                        "mensaje", ex.getMessage()));
     }
 
     private Map<String, Object> buildErrorResponse(String errorType, Map<String, String> details) {

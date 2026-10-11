@@ -46,14 +46,13 @@ public class TaxEngineController {
             @Digits(integer = 13, fraction = 2, message = DECIMALES_MSG)
             BigDecimal baseImponible) {
         List<PercepcionResponse> responses = percepcionService.percepcion(fecha, cuit, jurisdiccion, baseImponible);
-        return responses.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(responses);
+        return ResponseEntity.ok(responses);
     }
 
     @GetMapping(path = "/padron")
-    public ResponseEntity<Padron> padron(@RequestParam YearMonth periodo, @RequestParam String cuit) {
+    public Padron padron(@RequestParam YearMonth periodo, @RequestParam String cuit) {
         return padronService.getPadron(periodo, cuit)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+                .orElseThrow(() -> new PadronNoEncontradoException(periodo, cuit));
     }
 
     @PostMapping(path = "/declaracion")

@@ -65,14 +65,11 @@ class DeclaracionServiceTest {
         @DisplayName("sin diferencias, no agrega la sección DIFERENCIAS")
         void sinDiferencias_noAgregaSeccionDiferencias() {
             mockearPercepcionSicrip(new BigDecimal("5.00"), new BigDecimal("5.00"));
-            Padron padron = mock(Padron.class);
-            when(padron.getCrc()).thenReturn((short) 22);
-            when(padronService.getPadron(PERIODO, CUIT)).thenReturn(Optional.of(padron));
-            String expected = "20123456789,22,15/03/2024,1,1,0,900,1,A,0001,00000123,100.00,5.00,5.00,,,A";
+            mockearPadron();
             DeclaracionRequest solicitud = solicitud("00000123", "100.00", "5.00", "5.00");
 
             String resultado = declaracionService.declaracion(List.of(solicitud));
-
+            String expected = "20123456789,22,15/03/2024,1,1,0,900,1,A,0001,00000123,100.00,5.00,5.00,,,A";
             assertThat(resultado).isEqualTo(expected);
         }
 
@@ -81,22 +78,19 @@ class DeclaracionServiceTest {
         void conDiferencias_agregaSeccionDiferencias() {
             // el request declara alicuota 5.00 / montoPercibido 5.00, pero el servicio calcula otros valores
             mockearPercepcionSicrip(new BigDecimal("7.50"), new BigDecimal("7.50"));
-            Padron padron = mock(Padron.class);
-            when(padron.getCrc()).thenReturn((short) 22);
-            when(padronService.getPadron(PERIODO, CUIT)).thenReturn(Optional.of(padron));
+            mockearPadron();
             DeclaracionRequest solicitud = solicitudValida("100.00", "5.00", "5.00");
-            String expected = """
-            20123456789,22,15/03/2024,1,1,0,900,1,A,0001,00000123,100.00,5.00,5.00,,,A
-            DIFERENCIAS
-            20123456789,22,15/03/2024,1,1,0,900,1,A,0001,00000123,100.00,7.50,7.50,,,A""";
 
             String resultado = declaracionService.declaracion(List.of(solicitud));
-
+            String expected = """
+            20123456789,22,15/03/2024,1,,0,900,1,A,0001,00000123,100.00,5.00,5.00,,,A
+            DIFERENCIAS
+            20123456789,22,15/03/2024,1,1,0,900,1,A,0001,00000123,100.00,7.50,7.50,,,A""";
             assertThat(resultado).isEqualTo(expected);
         }
 
         @Test
-        @DisplayName("varias solicitudes se unen con salto de línea")
+        @DisplayName("varias lineas enviadas de distintos comprobantes sin diferencias")
         void variasSolicitudes_seUnenConSaltoDeLinea() {
             DeclaracionRequest req1 = solicitud("00000123", "100.00", "5.00", "5.00");
             DeclaracionRequest req2 = solicitud("00000124", "200.00", "1.00", "2.00");
@@ -104,24 +98,97 @@ class DeclaracionServiceTest {
                     .thenReturn(List.of(getPercepcionResponse("SIRC", "5.00", "100.00", "5.00")));
             when(percepcionService.percepciones(req2))
                     .thenReturn(List.of(getPercepcionResponse("SIRC", "1.00", "200.00", "2.00")));
-            Padron padron = mock(Padron.class);
-            when(padron.getCrc()).thenReturn((short) 22);
-            when(padronService.getPadron(PERIODO, CUIT)).thenReturn(Optional.of(padron));
+            mockearPadron();
 
             String resultado = declaracionService.declaracion(List.of(req1, req2));
-
-            // TODO : usar distintos requests
             String expected = """
-                    20123456789,22,15/03/2024,1,1,0,900,1,A,0001,00000123,100.00,5.00,5.00,,,A
-                    20123456789,22,15/03/2024,1,1,0,900,1,A,0001,00000124,200.00,1.00,2.00,,,A""";
+            20123456789,22,15/03/2024,1,1,0,900,1,A,0001,00000123,100.00,5.00,5.00,,,A
+            20123456789,22,15/03/2024,1,1,0,900,1,A,0001,00000124,200.00,1.00,2.00,,,A""";
             assertThat(resultado).isEqualTo(expected);
         }
 
-    }
+        @Test
+        @DisplayName("1 línea enviada y 0 calculadas: informa que no se pudo calcular la percepción")
+        void unaEnviada_ceroCalculadas_noSePudoCalcular() {
+            when(percepcionService.percepciones(any(DeclaracionRequest.class))).thenReturn(List.of());
+            mockearPadron();
+            DeclaracionRequest enviada = solicitud("00000123", "100.00", "5.00", "5.00");
 
-    private static PercepcionResponse getPercepcionResponse(String codigoImpuesto, String alicuota, String baseImponible, String percepcion) {
-        return new PercepcionResponse(codigoImpuesto,
-                new BigDecimal(alicuota), new BigDecimal(baseImponible), new BigDecimal(percepcion));
+            String resultado = declaracionService.declaracion(List.of(enviada));
+            String expected = """
+            20123456789,22,15/03/2024,1,,0,900,1,A,0001,00000123,100.00,5.00,5.00,,,A
+            DIFERENCIAS
+            No se pudo calcular la percepción para tipo comprobante 1, letra A, número comprobante 00000123, punto venta 0001""";
+            assertThat(resultado).isEqualTo(expected);
+        }
+
+        @Test
+        @DisplayName("2 líneas enviadas y 1 calculada: la enviada que sobra queda sin tipo y se informa lo calculado")
+        void dosEnviadas_unaCalculada_sobraUnaEnviada() {
+            when(percepcionService.percepciones(any(DeclaracionRequest.class)))
+                    .thenReturn(List.of(getPercepcionResponse("SIRC", "3.00", "100.00", "3.00")));
+            mockearPadron();
+            DeclaracionRequest enviada1 = solicitud("00000123", "100.00", "3.00", "3.00");
+            DeclaracionRequest enviada2 = solicitud("00000123", "100.00", "1.00", "1.00");
+
+            String resultado = declaracionService.declaracion(List.of(enviada1, enviada2));
+            String expected = """
+            20123456789,22,15/03/2024,1,1,0,900,1,A,0001,00000123,100.00,3.00,3.00,,,A
+            20123456789,22,15/03/2024,1,,0,900,1,A,0001,00000123,100.00,1.00,1.00,,,A
+            DIFERENCIAS
+            20123456789,22,15/03/2024,1,1,0,900,1,A,0001,00000123,100.00,3.00,3.00,,,A""";
+            assertThat(resultado).isEqualTo(expected);
+        }
+
+        @Test
+        @DisplayName("1 línea enviada y 2 calculadas: falta una enviada, se informa lo calculado")
+        void unaEnviada_dosCalculadas_faltaUnaEnviada() {
+            when(percepcionService.percepciones(any(DeclaracionRequest.class)))
+                    .thenReturn(List.of(
+                            getPercepcionResponse("SIRC", "3.00", "100.00", "3.00"),
+                            getPercepcionResponse("SIRX", "1.00", "100.00", "1.00")));
+            mockearPadron();
+            DeclaracionRequest enviada = solicitud("00000123", "100.00", "3.00", "3.00");
+
+            String resultado = declaracionService.declaracion(List.of(enviada));
+            String expected = """
+            20123456789,22,15/03/2024,1,1,0,900,1,A,0001,00000123,100.00,3.00,3.00,,,A
+            DIFERENCIAS
+            20123456789,22,15/03/2024,1,1,0,900,1,A,0001,00000123,100.00,3.00,3.00,,,A
+            20123456789,22,15/03/2024,1,5,0,900,1,A,0001,00000123,100.00,1.00,1.00,,,A""";
+            assertThat(resultado).isEqualTo(expected);
+        }
+
+        @Test
+        @DisplayName("2 líneas enviadas y 2 calculadas con la misma alícuota: sin diferencias")
+        void dosEnviadas_dosCalculadas_mismasAlicuotas_sinDiferencias() {
+            when(percepcionService.percepciones(any(DeclaracionRequest.class)))
+                    .thenReturn(List.of(
+                            getPercepcionResponse("SIRC", "1.00", "100.00", "1.00"),
+                            getPercepcionResponse("SIRX", "1.00", "100.00", "1.00")));
+            mockearPadron();
+            DeclaracionRequest enviada1 = solicitud("00000123", "100.00", "1.00", "1.00");
+            DeclaracionRequest enviada2 = solicitud("00000123", "100.00", "1.00", "1.00");
+
+            String resultado = declaracionService.declaracion(List.of(enviada1, enviada2));
+            String expected = """
+            20123456789,22,15/03/2024,1,1,0,900,1,A,0001,00000123,100.00,1.00,1.00,,,A
+            20123456789,22,15/03/2024,1,5,0,900,1,A,0001,00000123,100.00,1.00,1.00,,,A""";
+            assertThat(resultado).isEqualTo(expected);
+            assertThat(resultado).doesNotContain("DIFERENCIAS");
+        }
+
+        private void mockearPadron() {
+            Padron padron = mock(Padron.class);
+            when(padron.getCrc()).thenReturn((short) 22);
+            when(padronService.getPadron(PERIODO, CUIT)).thenReturn(Optional.of(padron));
+        }
+
+        private static PercepcionResponse getPercepcionResponse(String codigoImpuesto, String alicuota, String baseImponible, String percepcion) {
+            return new PercepcionResponse(codigoImpuesto,
+                    new BigDecimal(alicuota), new BigDecimal(baseImponible), new BigDecimal(percepcion));
+        }
+
     }
 
     @Nested
@@ -184,5 +251,6 @@ class DeclaracionServiceTest {
 
             assertThat(declaracionService.hayInvalidas(List.of(valida, invalida))).isTrue();
         }
+
     }
 }

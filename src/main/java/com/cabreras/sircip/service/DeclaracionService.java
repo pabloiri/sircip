@@ -12,11 +12,10 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.cabreras.sircip.service.PercepcionService.*;
 
 @Service
 @AllArgsConstructor
@@ -24,17 +23,24 @@ public class DeclaracionService {
 
     private static final String SEPARADOR = ",";
     public static final String TIPO = "1";
-    public static final String TIPO_REGISTRO = "1";
     public static final String CODIGO_OPERACION = "0";
     public static final String ABM = "A";
     public static final String CRC_DEVOLUCIONES = "";
     public static final String DIFERENCIAS = "DIFERENCIAS";
     private static final DateTimeFormatter formateadorFecha = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final String TIPO_REGISTRO_SIRC = "1";
+    private static final String TIPO_REGISTRO_SIRC_ALICUOTA_CERO = "2";
+    private static final String TIPO_REGISTRO_SIRY = "4";
+    private static final String TIPO_REGISTRO_SIRX = "5";
     private static final String ERROR_CALCULO =
-        "No se pudo calcular la percepción para tipo comprobante %s, letra %s, número comprobante %s, punto venta %s";
+            "No se pudo calcular la percepción para tipo comprobante %s, letra %s, número comprobante %s, punto venta %s";
 
     private final PadronService padronService;
     private final PercepcionService percepcionService;
+
+    public boolean hayInvalidas(List<DeclaracionRequest> solicitudes) {
+        return solicitudes.stream().anyMatch(this::esInvalida);
+    }
 
     public @NonNull String declaracion(List<DeclaracionRequest> requests) {
         Map<ClaveComprobante, List<DeclaracionRequest>> requestsPorComprobante = requests.stream()
@@ -65,12 +71,23 @@ public class DeclaracionService {
         DeclaracionRequest primero = requestsDeUnComprobante.getFirst();
         List<PercepcionResponse> calculadas = percepcionService.percepciones(primero);
         String crc = obtenerCrc(primero.cuit(), primero.fecha());
+        boolean hayDiferencias = false;
 
-        requestsDeUnComprobante.forEach(request -> lineas.add(construirLineaTxt(request, crc)));
+        List<PercepcionResponse> pendientes = new ArrayList<>(calculadas);
+        for (DeclaracionRequest request : requestsDeUnComprobante) {
+            Optional<PercepcionResponse> calculada = tomarCalculada(pendientes, request.alicuota());
+            // sin calculada con esa alícuota, o con distinto importe: diferencia
+            hayDiferencias |= calculada
+                    .map(c -> !sonIguales(c.importe(), new BigDecimal(request.montoPercibido())))
+                    .orElse(true);
+            String tipo = calculada.map(DeclaracionService::tipoRegistro).orElse("");
+            lineas.add(construirLineaTxt(request, crc, tipo));
+        }
+        hayDiferencias |= !pendientes.isEmpty();   // calculadas que no tenían línea recibida
 
-        if (hayDiferencias(requestsDeUnComprobante, calculadas)) {
+        if (hayDiferencias) {
             calculadas.forEach(calc ->
-                    diferencias.add(construirLineaTxt(construirDiferencia(primero, calc), crc)));
+                    diferencias.add(construirLineaTxt(construirDiferencia(primero, calc), crc, tipoRegistro(calc))));
             if (calculadas.isEmpty()) {
                 diferencias.add(ERROR_CALCULO.formatted(primero.tipoComprobante(), primero.letra(),
                         primero.numeroComprobante(), primero.puntoVenta()));
@@ -92,9 +109,19 @@ public class DeclaracionService {
         }
     }
 
-    private @NonNull String construirLineaTxt(DeclaracionRequest req, String crc) {
+    // Toma (y quita de la lista) la primera calculada con esa alícuota
+    private static Optional<PercepcionResponse> tomarCalculada(List<PercepcionResponse> pendientes, String alicuota) {
+        BigDecimal buscada = new BigDecimal(alicuota);
+        Optional<PercepcionResponse> calculada = pendientes.stream()
+                .filter(c -> sonIguales(c.alicuota(), buscada))
+                .findFirst();
+        calculada.ifPresent(pendientes::remove);
+        return calculada;
+    }
+
+    private @NonNull String construirLineaTxt(DeclaracionRequest req, String crc, String tipoRegistro) {
         return String.join(SEPARADOR,
-                aString(req.cuit()), crc, aString(req.fecha()), TIPO, TIPO_REGISTRO,
+                aString(req.cuit()), crc, aString(req.fecha()), TIPO, tipoRegistro,
                 CODIGO_OPERACION, aString(req.jurisdiccion()), aString(req.tipoComprobante()),
                 aString(req.letra()), aString(req.puntoVenta()), aString(req.numeroComprobante()),
                 aString(req.monto()), aString(req.alicuota()), aString(req.montoPercibido()),
@@ -108,29 +135,6 @@ public class DeclaracionService {
                 base.comprobanteOriginal());
     }
 
-    // Solo se contempla el caso en que hay 1 o 2 elementos en cada lista
-    // O sea 1 o 2 percepciones por comprobante
-    private static boolean hayDiferencias(List<DeclaracionRequest> recibidas, List<PercepcionResponse> calculadas) {
-        int n = recibidas.size();
-        if (n != calculadas.size())
-            return true;
-        if (n == 1)
-            return !coincide(recibidas.getFirst(), calculadas.getFirst());
-        if (n == 2) {
-            DeclaracionRequest r0 = recibidas.get(0), r1 = recibidas.get(1);
-            PercepcionResponse c0 = calculadas.get(0), c1 = calculadas.get(1);
-            boolean directo = coincide(r0, c0) && coincide(r1, c1);
-            boolean cruzado = coincide(r0, c1) && coincide(r1, c0);
-            return !(directo || cruzado);
-        }
-        return true;         // n > 2
-    }
-
-    private static boolean coincide(DeclaracionRequest req, PercepcionResponse calc) {
-        return sonIguales(calc.alicuota(), new BigDecimal(req.alicuota()))
-                && sonIguales(calc.importe(), new BigDecimal(req.montoPercibido()));
-    }
-
     private static boolean sonIguales(BigDecimal bd1, BigDecimal bd2) {
         return bd1.setScale(2, RoundingMode.HALF_UP)
                 .compareTo(bd2.setScale(2, RoundingMode.HALF_UP)) == 0;
@@ -138,10 +142,6 @@ public class DeclaracionService {
 
     private String aString(Object objeto) {
         return objeto == null ? "" : objeto.toString();
-    }
-
-    public boolean hayInvalidas(List<DeclaracionRequest> solicitudes) {
-        return solicitudes.stream().anyMatch(this::esInvalida);
     }
 
     private boolean esInvalida(DeclaracionRequest req) {
@@ -168,6 +168,17 @@ public class DeclaracionService {
 
     private boolean esVacio(String valor) {
         return valor == null || valor.isBlank();
+    }
+
+    private static String tipoRegistro(PercepcionResponse calc) {
+        return switch (calc.codigoImpuesto()) {
+            case SIRC -> calc.alicuota().compareTo(BigDecimal.ZERO) == 0
+                    ? TIPO_REGISTRO_SIRC_ALICUOTA_CERO
+                    : TIPO_REGISTRO_SIRC;
+            case SIRY -> TIPO_REGISTRO_SIRY;
+            case SIRX -> TIPO_REGISTRO_SIRX;
+            default -> "";
+        };
     }
 
 }

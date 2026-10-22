@@ -4,6 +4,7 @@ import com.cabreras.sircip.dto.PercepcionResponse;
 import com.cabreras.sircip.dto.PercepcionStrategyRequest;
 
 import java.math.BigDecimal;
+import java.time.YearMonth;
 import java.util.List;
 
 public interface PercepcionStrategy {
@@ -11,4 +12,6 @@ public interface PercepcionStrategy {
     BigDecimal BD_100 = new BigDecimal("100.00");
 
     List<PercepcionResponse> percepciones(PercepcionStrategyRequest request);
+
+    boolean adheridaSircip(YearMonth periodo);
 }

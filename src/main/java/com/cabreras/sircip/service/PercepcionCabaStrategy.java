@@ -4,6 +4,7 @@ import com.cabreras.sircip.dto.PercepcionResponse;
 import com.cabreras.sircip.dto.PercepcionStrategyRequest;
 import com.cabreras.sircip.entity.PadronCaba;
 import com.cabreras.sircip.entity.PadronId;
+import com.cabreras.sircip.repo.JurisdiccionesCache;
 import com.cabreras.sircip.repo.PadronCabaRepository;
 import lombok.AllArgsConstructor;
 import org.jspecify.annotations.NonNull;
@@ -27,6 +28,7 @@ public class PercepcionCabaStrategy implements PercepcionStrategy {
     public static final BigDecimal ALICUOTA_2 = new BigDecimal("6.00");    // no inscripto y no esta en padron
 
     private PadronCabaRepository padronRepository;
+    private JurisdiccionesCache jurisdiccionesCache;
 
     @Override
     public List<PercepcionResponse> percepciones(PercepcionStrategyRequest request) {
@@ -38,6 +40,11 @@ public class PercepcionCabaStrategy implements PercepcionStrategy {
         var importe = request.monto().multiply(alicuota).divide(BD_100, RoundingMode.HALF_UP);
         var response = new PercepcionResponse(CABA, alicuota, request.monto(), importe);
         return List.of(response);
+    }
+
+    @Override
+    public boolean adheridaSircip(YearMonth periodo) {
+        return jurisdiccionesCache.adheridaSircip(JURISDICCION_CABA, periodo);
     }
 
     public @NonNull Optional<PadronCaba> getPadron(YearMonth periodo, String cuit) {

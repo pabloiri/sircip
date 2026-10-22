@@ -20,11 +20,11 @@ public class PercepcionV2Service {
 
     public List<PercepcionResponse> percepciones(LocalDate fecha, String cuit, Short jurisdiccion,
                                                  List<Short> jurisdicciones, BigDecimal monto) {
-        // TODO : ver si la jurisdiccion en el periodo esta adherida a SIRCIP para llamar o no a cada estrategia.
         YearMonth periodo = YearMonth.from(fecha);
         var request = new PercepcionStrategyRequest(periodo, cuit, jurisdiccion, jurisdicciones, monto);
         var percepcionesSircip = percepcionV1Service.percepcion(fecha, cuit, jurisdiccion, monto);
         var percepcionesNoSircip = strategyList.stream()
+                .filter(strategy -> !strategy.adheridaSircip(periodo))
                 .flatMap(strategy -> strategy.percepciones(request).stream())
                 .toList();
         return Stream.concat(percepcionesSircip.stream(), percepcionesNoSircip.stream()).toList();

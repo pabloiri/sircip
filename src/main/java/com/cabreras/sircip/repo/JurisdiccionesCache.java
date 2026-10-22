@@ -17,7 +17,7 @@ public class JurisdiccionesCache {
     public void init() {
         // TODO : cambiar la vigencia
         YearMonth vigencia = YearMonth.of(2026, 10);
-        vigenciaDesde.put((short) 901, vigencia);
+        vigenciaDesde.put((short) 901, vigencia); // CABA
         vigenciaDesde.put((short) 903, vigencia);
         vigenciaDesde.put((short) 905, vigencia);
         vigenciaDesde.put((short) 907, vigencia);

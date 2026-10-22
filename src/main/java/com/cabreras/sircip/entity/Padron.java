@@ -8,10 +8,7 @@ import java.math.BigInteger;
 @Entity
 @Table(name = "padron")
 @Getter
-public class Padron {
-
-    @EmbeddedId
-    private PadronId id;
+public class Padron extends PadronBase {
 
     private Short jurisdiccion;
     private Short crc;

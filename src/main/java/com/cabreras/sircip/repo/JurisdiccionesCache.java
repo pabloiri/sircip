@@ -14,7 +14,7 @@ public class JurisdiccionesCache {
 
     @PostConstruct
     public void init() {
-        YearMonth vigencia = YearMonth.of(2026, 12);
+        YearMonth vigencia = YearMonth.of(2026, 9);
         vigenciaDesde.put((short) 906, vigencia);
         vigenciaDesde.put((short) 911, vigencia);
         vigenciaDesde.put((short) 913, vigencia);

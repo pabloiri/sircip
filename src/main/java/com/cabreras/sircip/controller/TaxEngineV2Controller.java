@@ -35,11 +35,12 @@ public class TaxEngineV2Controller {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
             @RequestParam @Pattern(regexp = "^\\d{11}$", message = CUIT_MSG) String cuit,
             @RequestParam @Min(901) @Max(924) Short jurisdiccion,
-            @RequestParam List<Short> jurisdicciones,
+            @RequestParam List<Short> inscripcionesIIBB,
             @RequestParam(required = false)
             @Digits(integer = 13, fraction = 2, message = DECIMALES_MSG)
             BigDecimal baseImponible) {
-        List<PercepcionResponse> responses = percepcionService.percepciones(fecha, cuit, jurisdiccion, jurisdicciones, baseImponible);
+        List<PercepcionResponse> responses =
+                percepcionService.percepciones(fecha, cuit, jurisdiccion, inscripcionesIIBB, baseImponible);
         return ResponseEntity.ok(responses);
     }
 
